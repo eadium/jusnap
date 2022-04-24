@@ -4,7 +4,7 @@ import "sync"
 
 type Locker struct {
 	lock bool
-	mx   sync.Mutex
+	mx   sync.RWMutex
 }
 
 func (l *Locker) Lock() {

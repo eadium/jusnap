@@ -46,7 +46,7 @@ func ticker(ctx context.Context, tick chan struct{}) {
 func StartLoop(ctx context.Context, k *kernel.Kernel, logger *zap.SugaredLogger) {
 	d := &snapData{
 		sig:    make(chan struct{}),
-		locker: &utils.Locker{},
+		locker: k.Locker,
 		kernel: k,
 		logger: logger,
 	}

@@ -16,6 +16,7 @@ var logger *zap.SugaredLogger
 
 func main() {
 	l, _ := zap.NewProduction()
+	l.WithOptions()
 	defer l.Sync()
 	logger = l.Sugar()
 	logger.Infow("Starting application")
@@ -23,8 +24,8 @@ func main() {
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
 
-	k := kernel.Create("python3", logger)
-	defer k.Kill()
+	k := kernel.Create("ipykernel", logger)
+	defer k.Stop()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -33,7 +34,18 @@ func main() {
 	select {
 	case sig := <-cancelChan:
 		logger.Infof("Caught signal %v", sig)
-	case <-time.After(20 * time.Second):
-		logger.Infof("Stopping application")
+	case <-time.After(10 * time.Second):
+		logger.Infof("time passed")
 	}
+	cancel()
+	<-time.After(5 * time.Second)
+
+	k.Snapshots[len(k.Snapshots)-1].Restore()
+	<-time.After(10 * time.Second)
+
+	k.Snapshots[len(k.Snapshots)-1].Restore()
+	<-time.After(10 * time.Second)
+
+	logger.Infof("Stopping application")
+
 }

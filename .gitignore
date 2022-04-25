@@ -1,2 +1,4 @@
 jusnap
 draft*
+*.log
+*.sh

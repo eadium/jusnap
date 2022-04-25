@@ -27,12 +27,11 @@ func snapshotLoop(ctx context.Context, d *snapData) {
 				d.kernel.CreateSnapshot()
 			}
 		}
-
 	}
 }
 
 func ticker(ctx context.Context, tick chan struct{}) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(300 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():

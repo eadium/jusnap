@@ -2,3 +2,4 @@ jusnap
 draft*
 *.log
 *.sh
+conf.yml

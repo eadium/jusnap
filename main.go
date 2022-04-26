@@ -53,7 +53,7 @@ func main() {
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
 
-	k := kernel.Create("ipykernel", logger)
+	k := kernel.Create("ipykernel", logger, cfg)
 	defer k.Stop()
 
 	ctx, cancel := context.WithCancel(ctx)

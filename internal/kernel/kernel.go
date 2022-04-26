@@ -3,6 +3,7 @@ package kernel
 import (
 	"bytes"
 	"fmt"
+	"jusnap/internal/config"
 	"jusnap/internal/utils"
 	"os"
 	"os/exec"
@@ -20,21 +21,28 @@ type Kernel struct {
 	proc      *os.Process
 	criu      *os.Process
 	snapshots []*Snapshot
+	config    *config.Config
 	Name      string
 	version   string
 }
 
-func Create(name string, l *zap.SugaredLogger) *Kernel {
+func Create(name string, l *zap.SugaredLogger, cfg *config.Config) *Kernel {
 	k := &Kernel{
 		Logger: l,
 		Name:   name,
 		Locker: &utils.Locker{},
+		config: cfg,
 	}
 
 	cmd := exec.Command("python3", "-m", "ipykernel_launcher")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
+	cmd.SysProcAttr.Credential = &syscall.Credential{
+		Uid: uint32(cfg.Jusnap.OsConfig.Uid),
+		Gid: uint32(cfg.Jusnap.OsConfig.Gid),
+	}
+
 	err := cmd.Start()
 	if err != nil {
 		k.Logger.Fatalf("Error while creating kernel: %s", err)
@@ -47,7 +55,7 @@ func Create(name string, l *zap.SugaredLogger) *Kernel {
 	k.Logger.Infof("Kernel %d (%s): started", k.proc.Pid, name)
 
 	if e := k.LoadSnapshots(); e != nil {
-		k.Logger.Errorf("Error while loading existing snapshots")
+		k.Logger.Warnf("Error while loading existing snapshots: %s", e.Error())
 	} else {
 		k.Logger.Infof("Loaded %d existing snapshots from disk", len(k.snapshots))
 	}
@@ -99,8 +107,10 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 
 	time := time.Now()
 	nowStr := strconv.FormatInt(time.Unix(), 10)
-	newpath := filepath.Join(".", "dumps", nowStr)
-	err := os.MkdirAll(newpath, os.ModePerm)
+	snapshotPath := filepath.Join(".", "dumps", nowStr)
+	historyPath := filepath.Join(snapshotPath, "history.sqlite")
+
+	err := os.MkdirAll(snapshotPath, os.ModePerm)
 	if err != nil {
 		k.Logger.Errorf("Error while creating snapshot directory: %s", err)
 		return nil, err
@@ -108,8 +118,8 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 
 	cmd := exec.Command("criu", "dump",
 		"-t", strconv.Itoa(k.proc.Pid),
-		// "-o", filepath.Join(newpath, "dump.log"),
-		"--images-dir", newpath,
+		// "-o", filepath.Join(snapshotPath, "dump.log"),
+		"--images-dir", snapshotPath,
 		"--tcp-established",
 		"--shell-job",
 		"--leave-running")
@@ -120,14 +130,19 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 	err1 := cmd.Run()
 	if err1 != nil {
 		k.Logger.Errorf("%s: %s", fmt.Sprint(err1), stderr.String())
-		oserr := os.RemoveAll(newpath)
+		oserr := os.RemoveAll(snapshotPath)
 		if oserr != nil {
-			k.Logger.Errorf("Error while removing directory %s", newpath)
+			k.Logger.Errorf("Error while removing directory %s", snapshotPath)
 		}
 		return nil, err1
 	}
 	if out.Len() != 0 {
 		k.Logger.Infof("CRIU: %s", out.String())
+	}
+
+	_, errCopy := utils.Copy(k.config.Jusnap.KernelConfig.HistoryFile, historyPath)
+	if errCopy != nil {
+		k.Logger.Errorf("Error while copying ipython history: %s", errCopy.Error())
 	}
 
 	snap := &Snapshot{

@@ -12,6 +12,8 @@ const (
 	defaultReadTimeout        = time.Second
 	defaultWriteTimeout       = time.Second
 	defaultipythonHistoryFile = "~/.ipython/profile_default/history.sqlite"
+	defaultRuntimePath        = "~/.local/share/jupyter/runtime/"
+	defaultCooldownInterval   = 5 * time.Second
 )
 
 const (
@@ -24,7 +26,9 @@ var (
 	httpWriteTimeout *time.Duration
 	logLevel         *string
 
+	cooldownInterval   *time.Duration
 	ipythonHistoryFile *string
+	runtimePath        *string
 	uid                *int
 	gid                *int
 )
@@ -35,8 +39,10 @@ func init() { //nolint
 	httpWriteTimeout = config.Duration("jusnap.http.write_timeout", defaultWriteTimeout, "HTTP write timeout")
 
 	ipythonHistoryFile = config.String("jusnap.ipython.history_file", defaultipythonHistoryFile, "Path to history.sqlite")
+	runtimePath = config.String("jusnap.ipython.runtime_path", defaultRuntimePath, "Path to Jupyter runtime dir")
 	uid = config.Int("jusnap.os.uid", os.Getuid(), "UID for created files")
 	gid = config.Int("jusnap.os.gid", os.Getgid(), "GID for created files")
+	cooldownInterval = config.Duration("jusnap.ipython.cooldown", defaultCooldownInterval, "Snapshotting cooldown interval")
 
 	logLevel = config.String("jusnap.log_level", defaultLogLevel, "Logging level")
 }
@@ -50,7 +56,9 @@ type AppConfig struct {
 }
 
 type KernelConfig struct {
-	HistoryFile string
+	HistoryFile      string
+	RuntimePath      string
+	CooldownInterval time.Duration
 }
 
 type OsConfig struct {
@@ -91,7 +99,9 @@ func newDefaultConfig(version string) *Config {
 
 func newKernelConfig() *KernelConfig {
 	return &KernelConfig{
-		HistoryFile: *ipythonHistoryFile,
+		HistoryFile:      *ipythonHistoryFile,
+		RuntimePath:      *runtimePath,
+		CooldownInterval: *cooldownInterval,
 	}
 }
 

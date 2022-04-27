@@ -64,6 +64,12 @@ func (s *service) CreateSnapshot(ctx context.Context) (*RestoreSnapResponse, err
 	if err != nil {
 		return nil, err
 	}
+	if snap == nil {
+		resp := &RestoreSnapResponse{
+			Status: "skipped",
+		}
+		return resp, nil
+	}
 
 	resp := &RestoreSnapResponse{
 		Status: "snapshotted",

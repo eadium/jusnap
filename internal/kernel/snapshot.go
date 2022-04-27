@@ -64,6 +64,7 @@ func (s *Snapshot) Restore() error {
 		"--pidfile", "kernel.pid",
 		"-v", "-o", "restore.log",
 		"--tcp-established",
+		// "--file-locks",
 		"--shell-job")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,

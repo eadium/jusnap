@@ -6,12 +6,9 @@ import (
 	"jusnap/internal/config"
 	"jusnap/internal/kernel"
 	"jusnap/internal/service/snap"
-	"jusnap/internal/snapshot"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 
 	bunsconf "github.com/city-mobil/gobuns/config"
 	"github.com/city-mobil/gobuns/graceful"
@@ -21,8 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// var logger *zap.SugaredLogger
-
 var (
 	version     = "dev"
 	commit      = "none"
@@ -31,6 +26,7 @@ var (
 
 func main() {
 	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
 
 	cfg, err := initConfig()
 	if err != nil {
@@ -38,11 +34,8 @@ func main() {
 	}
 
 	l, _ := zap.NewProduction()
-	l.WithOptions()
 	defer l.Sync()
 	logger := l.Sugar()
-
-	logger.Infow("Starting application")
 
 	zlogger, accessLogger := initLogger(cfg)
 	zlogger.Info().
@@ -50,15 +43,9 @@ func main() {
 		Str("commit", commit).
 		Msgf("Starting %s", serviceName)
 
-	cancelChan := make(chan os.Signal, 1)
-	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
-
-	k := kernel.Create("ipykernel", logger, cfg)
+	k := kernel.Create("ipykernel", logger, cfg, ctx)
 	defer k.Stop()
-
-	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	snapshot.StartLoop(ctx, k, logger)
 
 	snapService := snap.NewService(logger, k)
 	dispatcher := router.NewDispatcher(zlogger, accessLogger, cfg, snapService)

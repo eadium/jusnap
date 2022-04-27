@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"jusnap/internal/config"
 	"jusnap/internal/utils"
@@ -22,19 +23,25 @@ type Kernel struct {
 	criu      *os.Process
 	snapshots []*Snapshot
 	config    *config.Config
+	control   chan struct{}
+	ctx       context.Context
+	JsonPath  string
 	Name      string
 	version   string
 }
 
-func Create(name string, l *zap.SugaredLogger, cfg *config.Config) *Kernel {
+func Create(name string, l *zap.SugaredLogger, cfg *config.Config, ctx context.Context) *Kernel {
 	k := &Kernel{
-		Logger: l,
-		Name:   name,
-		Locker: &utils.Locker{},
-		config: cfg,
+		Logger:   l,
+		Name:     name,
+		Locker:   &utils.Locker{},
+		config:   cfg,
+		JsonPath: filepath.Join(cfg.Jusnap.KernelConfig.RuntimePath, "kernel-persist.json"),
+		control:  make(chan struct{}),
+		ctx:      ctx,
 	}
 
-	cmd := exec.Command("python3", "-m", "ipykernel_launcher")
+	cmd := exec.Command("python3", "-m", "ipykernel_launcher", "-f", k.JsonPath)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}
@@ -53,12 +60,16 @@ func Create(name string, l *zap.SugaredLogger, cfg *config.Config) *Kernel {
 	k.proc.Pid = cmd.Process.Pid
 	k.version = "vanilla"
 	k.Logger.Infof("Kernel %d (%s): started", k.proc.Pid, name)
+	// go k.proc.Wait()
 
 	if e := k.LoadSnapshots(); e != nil {
 		k.Logger.Warnf("Error while loading existing snapshots: %s", e.Error())
 	} else {
 		k.Logger.Infof("Loaded %d existing snapshots from disk", len(k.snapshots))
 	}
+
+	go k.CooldownLoop()
+
 	return k
 }
 
@@ -75,7 +86,7 @@ func (k *Kernel) Stop() {
 		k.Logger.Infof("Kernel exited with status: %s", status.String())
 
 		if err1 != nil {
-			k.Logger.Errorf("Error while waiting kernel PID %d: %s", k.proc.Pid, err1)
+			k.Logger.Errorf("Error while waiting for kernel PID %d: %s", k.proc.Pid, err1)
 		}
 
 	} else {
@@ -103,7 +114,13 @@ func (k *Kernel) Stop() {
 }
 
 func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
-	k.Logger.Infow("Creating snapshot...")
+	// cooldown for snapshotting
+	select {
+	case <-k.control:
+		k.Logger.Infow("Creating snapshot...")
+	default:
+		return nil, nil
+	}
 
 	time := time.Now()
 	nowStr := strconv.FormatInt(time.Unix(), 10)
@@ -122,6 +139,7 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		"--images-dir", snapshotPath,
 		"--tcp-established",
 		"--shell-job",
+		// "--file-locks",
 		"--leave-running")
 	var out bytes.Buffer
 	var stderr bytes.Buffer
@@ -204,4 +222,15 @@ func (k *Kernel) LoadSnapshots() error {
 
 	k.snapshots = snaps
 	return nil
+}
+
+func (k *Kernel) CooldownLoop() {
+	for {
+		select {
+		case <-time.After(k.config.Jusnap.KernelConfig.CooldownInterval):
+			k.control <- struct{}{}
+		case <-k.ctx.Done():
+			return
+		}
+	}
 }

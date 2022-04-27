@@ -14,3 +14,6 @@ build:
 	CGO=0 GOOS=linux go build .
 
 remote: build sync
+
+install:
+	

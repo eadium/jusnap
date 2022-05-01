@@ -26,36 +26,38 @@ func (s *Snapshot) Restore() error {
 	s.kernel.Stop()
 
 	snapshotPath := filepath.Join(".", "dumps", s.ID)
-	historyPath := filepath.Join(snapshotPath, "history.sqlite")
 	pidPath := filepath.Join(".", "dumps", s.ID, "kernel.pid")
-	historyBakPath := s.kernel.config.Jusnap.KernelConfig.HistoryFile + ".bak"
 
-	errRename := os.Rename(s.kernel.config.Jusnap.KernelConfig.HistoryFile, historyBakPath)
-	if errRename != nil {
-		s.kernel.Logger.Warnf("Error while renaming %s: %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errRename.Error())
-	}
-	_, errCopy := utils.Copy(historyPath, s.kernel.config.Jusnap.KernelConfig.HistoryFile)
-	if errCopy != nil {
-		s.kernel.Logger.Errorf("Error while restoring ipython history: %s", errCopy.Error())
-		if errRename == nil {
-			errRename2 := os.Rename(historyBakPath, s.kernel.config.Jusnap.KernelConfig.HistoryFile)
-			if errRename2 != nil {
-				s.kernel.Logger.Warnf("Error while renaming %s: %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errRename2.Error())
+	if s.kernel.config.Jusnap.KernelConfig.HistoryEnabled {
+		historyBakPath := s.kernel.config.Jusnap.KernelConfig.HistoryFile + ".bak"
+		historyPath := filepath.Join(snapshotPath, "history.sqlite")
+		errRename := os.Rename(s.kernel.config.Jusnap.KernelConfig.HistoryFile, historyBakPath)
+		if errRename != nil {
+			s.kernel.Logger.Warnf("Error while renaming %s: %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errRename.Error())
+		}
+		_, errCopy := utils.Copy(historyPath, s.kernel.config.Jusnap.KernelConfig.HistoryFile)
+		if errCopy != nil {
+			s.kernel.Logger.Errorf("Error while restoring ipython history: %s", errCopy.Error())
+			if errRename == nil {
+				errRename2 := os.Rename(historyBakPath, s.kernel.config.Jusnap.KernelConfig.HistoryFile)
+				if errRename2 != nil {
+					s.kernel.Logger.Warnf("Error while renaming %s: %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errRename2.Error())
+				}
 			}
-		}
-	} else {
-		errRm := os.Remove(historyBakPath)
-		if errRm != nil {
-			s.kernel.Logger.Errorf("Error while removing old ipython history (%s): %s", historyBakPath, errRm.Error())
-		}
-		errChmod := utils.SetFileMod(
-			s.kernel.config.Jusnap.KernelConfig.HistoryFile,
-			0775,
-			s.kernel.config.Jusnap.OsConfig.Uid,
-			s.kernel.config.Jusnap.OsConfig.Gid,
-		)
-		if errChmod != nil {
-			s.kernel.Logger.Errorf("Error while SetFileMod ipython history (%s): %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errChmod.Error())
+		} else {
+			errRm := os.Remove(historyBakPath)
+			if errRm != nil {
+				s.kernel.Logger.Errorf("Error while removing old ipython history (%s): %s", historyBakPath, errRm.Error())
+			}
+			errChmod := utils.SetFileMod(
+				s.kernel.config.Jusnap.KernelConfig.HistoryFile,
+				0775,
+				s.kernel.config.Jusnap.OsConfig.Uid,
+				s.kernel.config.Jusnap.OsConfig.Gid,
+			)
+			if errChmod != nil {
+				s.kernel.Logger.Errorf("Error while SetFileMod ipython history (%s): %s", s.kernel.config.Jusnap.KernelConfig.HistoryFile, errChmod.Error())
+			}
 		}
 	}
 

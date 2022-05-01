@@ -4,6 +4,7 @@ import (
 	"context"
 	"jusnap/internal/api/router"
 	"jusnap/internal/config"
+	"jusnap/internal/jupyter"
 	"jusnap/internal/kernel"
 	"jusnap/internal/service/snap"
 	"log"
@@ -47,6 +48,9 @@ func main() {
 	defer k.Stop()
 	defer cancel()
 
+	n := jupyter.Create(ctx, logger, cfg)
+	defer n.Stop()
+
 	snapService := snap.NewService(logger, k)
 	dispatcher := router.NewDispatcher(zlogger, accessLogger, cfg, snapService)
 	router := dispatcher.Init()
@@ -75,7 +79,6 @@ func main() {
 	if err != nil {
 		zlogger.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 	}
-
 }
 
 func initHTTPServer(router *mux.Router, cfg *config.Config) *http.Server {

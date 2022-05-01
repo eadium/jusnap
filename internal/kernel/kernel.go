@@ -40,14 +40,15 @@ func Create(name string, l *zap.SugaredLogger, cfg *config.Config, ctx context.C
 		control:  make(chan struct{}),
 		ctx:      ctx,
 	}
-
-	cmd := exec.Command("python3", "-m", "ipykernel_launcher", "-f", k.JsonPath)
+	args := []string{"-m", "ipykernel_launcher", "-f", k.JsonPath}
+	args = append(args, cfg.Jusnap.KernelConfig.IPythonArgs...)
+	cmd := exec.Command(cfg.Jusnap.PythonInterpreter, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
-	}
-	cmd.SysProcAttr.Credential = &syscall.Credential{
-		Uid: uint32(cfg.Jusnap.OsConfig.Uid),
-		Gid: uint32(cfg.Jusnap.OsConfig.Gid),
+		Credential: &syscall.Credential{
+			Uid: uint32(cfg.Jusnap.OsConfig.Uid),
+			Gid: uint32(cfg.Jusnap.OsConfig.Gid),
+		},
 	}
 
 	err := cmd.Start()
@@ -141,13 +142,14 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		"--shell-job",
 		// "--file-locks",
 		"--leave-running")
+
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
 	err1 := cmd.Run()
 	if err1 != nil {
-		k.Logger.Errorf("%s: %s", fmt.Sprint(err1), stderr.String())
+		k.Logger.Errorf("%s: %s", fmt.Sprint(err1.Error()), stderr.String())
 		oserr := os.RemoveAll(snapshotPath)
 		if oserr != nil {
 			k.Logger.Errorf("Error while removing directory %s", snapshotPath)
@@ -158,9 +160,11 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		k.Logger.Infof("CRIU: %s", out.String())
 	}
 
-	_, errCopy := utils.Copy(k.config.Jusnap.KernelConfig.HistoryFile, historyPath)
-	if errCopy != nil {
-		k.Logger.Errorf("Error while copying ipython history: %s", errCopy.Error())
+	if k.config.Jusnap.KernelConfig.HistoryEnabled {
+		_, errCopy := utils.Copy(k.config.Jusnap.KernelConfig.HistoryFile, historyPath)
+		if errCopy != nil {
+			k.Logger.Errorf("Error while copying ipython history: %s", errCopy.Error())
+		}
 	}
 
 	snap := &Snapshot{

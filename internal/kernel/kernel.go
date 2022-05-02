@@ -61,7 +61,6 @@ func Create(name string, l *zap.SugaredLogger, cfg *config.Config, ctx context.C
 	k.proc.Pid = cmd.Process.Pid
 	k.version = "vanilla"
 	k.Logger.Infof("Kernel %d (%s): started", k.proc.Pid, name)
-	// go k.proc.Wait()
 
 	if e := k.LoadSnapshots(); e != nil {
 		k.Logger.Warnf("Error while loading existing snapshots: %s", e.Error())

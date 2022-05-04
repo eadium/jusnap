@@ -65,7 +65,7 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 			snapHandler.GetSnapshots,
 		), time.Second,
 		messageTimeout,
-	)).Methods(http.MethodGet)
+	)).Methods(http.MethodGet, http.MethodOptions)
 
 	router.Handle("/snap/restore", http.TimeoutHandler(
 		handlers.AccessLogHandler(

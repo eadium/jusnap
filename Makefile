@@ -46,6 +46,8 @@ criu:
 jupyter:
 	$(python) -m pip install --upgrade setuptools notebook
 	$(python) -m pip install -e ./python_modules/jupyter/extkern
+	$(python) -m jupyter nbextension install python_modules/jupyter/extensions/jusnap --user
+	$(python) -m jupyter nbextension enable jusnap/jusnap
 
 ipykernel:
 	mkdir -p ~/.ipython/extensions || true

@@ -1,4 +1,3 @@
-jusnap
 draft*
 *.log
 *.sh
@@ -10,3 +9,4 @@ profile_default/*
 !snaphook.py
 __pycache__/
 *.pyc
+*.ipynb

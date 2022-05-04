@@ -26,7 +26,7 @@ define([
         top_level_submenu_goes_left: true,
     };
 
-    function notifyMe(msg, options) {
+    function notifyMe(msg, options={}) {
         if (!("Notification" in window)) {
           alert("This browser does not support desktop notification");
         }
@@ -48,10 +48,12 @@ define([
     async function http_get_async(theUrl, callback) {
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.onreadystatechange = () => { 
-            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-                callback(xmlHttp.responseText);
-            } else if (xmlHttp.status != 200 && xmlHttp.status != 0) {
-                console.log("GET req " + theUrl + ": " + xmlHttp.status + ", " + xmlHttp.responseText)
+            if (xmlHttp.readyState == 4) {
+                if ([200, 404, 400, 500].includes(xmlHttp.status)) {
+                    callback(xmlHttp.responseText);
+                } else if (xmlHttp.status != 200 && xmlHttp.status != 0) {
+                    console.log("GET req " + theUrl + ": " + xmlHttp.status + ", " + xmlHttp.responseText)
+                }
             }
         }
         xmlHttp.open("GET", theUrl, true);
@@ -61,39 +63,65 @@ define([
     async function http_post_async(theUrl, body, callback) {
         var xmlHttp = new XMLHttpRequest();
         xmlHttp.onreadystatechange = () => { 
-            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+            if (xmlHttp.readyState == 4) {
+                if ([200, 404, 400, 500].includes(xmlHttp.status)) {
                     callback(xmlHttp.responseText);
-            } else if (xmlHttp.status != 200 && xmlHttp.status != 0) {
-                console.log("POST req " + theUrl + ": " + xmlHttp.status + ", " + xmlHttp.responseText)
+                } else if (xmlHttp.status != 0) {
+                    console.log("POST req " + theUrl + ": " + xmlHttp.status + ", " + xmlHttp.responseText)
+                }
             }
-            
         }
         xmlHttp.open("POST", theUrl, true);
         xmlHttp.send(JSON.stringify(body));
     }
 
+    async function http_del_async(theUrl, body, callback) {
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = () => { 
+            if (xmlHttp.readyState == 4) {
+                if ([200, 404, 400, 500].includes(xmlHttp.status)) {
+                    callback(xmlHttp.responseText);
+                } else if (xmlHttp.status != 200 && xmlHttp.status != 0) {
+                    console.log("DELETE req " + theUrl + ": " + xmlHttp.status + ", " + xmlHttp.responseText)
+                }
+            }
+        }
+        xmlHttp.open("DELETE", theUrl, true);
+        xmlHttp.send(null);
+    }
+
     function async_load_snapshots(resp) {
         var snapshots = JSON.parse(resp)['snapshots']
         var el = document.querySelector(cfg.snapshots_submenu_id)
-        snapshots.forEach(e => {
-
-            let new_el = {
-                'name': e['date'],
-                'load_snapshot': e['id']
-            }
-            let submenu = build_menu_element(new_el, 'right')
-            submenu.appendTo(el)
-        })
-
+        if (snapshots.length > 0) {
+            snapshots.forEach(e => {
+                let new_el = {
+                    'name': e['date'],
+                    'load_snapshot': e['id']
+                }
+                let submenu = build_menu_element(new_el, 'right')
+                submenu.appendTo(el)
+            })
+        } else {
+            build_menu_element({
+                'name': '(empty)'
+            }, 'right').appendTo(el)
+        }
     }
 
     function load_snapshots() {
         http_get_async('http://'+cfg.api_host+'/api/snap', async_load_snapshots)
     }
 
+    function callback_load_snapshots(evt) {
+        $(cfg.snapshots_submenu_id).empty()
+        load_snapshots()
+    }
+
     function create_snapshot() {
         http_post_async('http://'+cfg.api_host+'/api/snap/new', {}, (resp) => {
             var data = JSON.parse(resp)
+            var opts = {}
             $(cfg.snapshots_submenu_id).empty()
             load_snapshots()
             var message
@@ -101,32 +129,9 @@ define([
                 message = 'Snapshot created'
             } else if (data['status'] === 'skipped') {
                 message = 'Snapshotting skipped: cooldown'
-            } else {
-                message = data
-            }
-
-            notifyMe(message)
-        })
-    }
-
-    function callback_create_snapshot(evt) {
-        create_snapshot()
-    }
-
-    function load_snapshot(id) {
-        var req = {
-            'id': id.toString()
-        }
-        http_post_async('http://'+cfg.api_host+'/api/snap/restore', req, (resp) => {
-            var data = JSON.parse(resp)
-            var message 
-            var opts = {}
-            if ('id' in data) {
-                message = 'Loaded snapshot'
-                opts['body'] = format_time(id)
-            } else if ('msg' in data) {
+            } else if ('message' in data) {
                 message = 'Snapshot warning'
-                opts['body'] = data['msg']
+                opts['body'] = data['message']
             } else {
                 message = 'Snapshot warning'
                 opts['body'] = resp
@@ -136,8 +141,62 @@ define([
         })
     }
 
-    function callback_load_snapshot(evt) {
-        load_snapshot($(evt.currentTarget).data('snapshot-id'))
+    function callback_create_snapshot(evt) {
+        create_snapshot()
+    }
+
+    function clear_snapshots() {
+        http_del_async('http://'+cfg.api_host+'/api/snap/clear', {}, (resp) => {
+            var data = JSON.parse(resp)
+            var opts = {}
+            $(cfg.snapshots_submenu_id).empty()
+            load_snapshots()
+            var message
+            if (data['status'] === 'cleared') {
+                message = 'Snapshots cleared'
+            } else if ('message' in data) {
+                message = 'Snapshot warning'
+                opts['body'] = data['message']
+            } else {
+                message = 'Snapshot warning'
+                opts['body'] = resp
+            }
+
+            notifyMe(message, opts)
+        })
+    }
+
+    function callback_clear_snapshots(evt) {
+        if (confirm('Erase all saved snapshots?')) {
+            clear_snapshots()
+        }
+    }
+
+    function restore_snapshot(id) {
+        var req = {
+            'id': id.toString()
+        }
+        http_post_async('http://'+cfg.api_host+'/api/snap/restore', req, (resp) => {
+            var data = JSON.parse(resp)
+            var message = ''
+            var opts = {}
+            if ('id' in data) {
+                message = 'Loaded snapshot'
+                opts['body'] = format_time(id)
+            } else if ('message' in data) {
+                message = 'Snapshot warning'
+                opts['body'] = data['message']
+            } else {
+                message = 'Snapshot warning'
+                opts['body'] = resp
+            }
+
+            notifyMe(message, opts)
+        })
+    }
+
+    function callback_restore_snapshot(evt) {
+        restore_snapshot($(evt.currentTarget).data('snapshot-id'))
     }
 
     function config_loaded_callback () {
@@ -153,7 +212,7 @@ define([
                 'sub-menu-direction' : 'right',
                 'sub-menu' : [
                     {
-                        'name' : 'Create',
+                        'name' : 'Create snapshot',
                         'sub-menu-direction' : 'right',
                         'create_snapshot': ''
                     },
@@ -161,7 +220,19 @@ define([
                         'name' : 'Load',
                         'sub-menu-direction' : 'right',
                         'id': 'snapshots-menu-load',
-                        'sub-menu': []
+                        'sub-menu': [],
+                    },
+                    {
+                        'name' : 'Refresh list',
+                        'sub-menu-direction' : 'right',
+                        'id': 'snapshots-menu-refresh',
+                        'refresh_snapshot': ''
+                    },
+                    {
+                        'name' : 'Clear all snapshots',
+                        'sub-menu-direction' : 'right',
+                        'id': 'snapshots-menu-clear',
+                        'clear_snapshot': ''
                     }
                 ],
             },
@@ -205,6 +276,20 @@ define([
             .on('click', callback_create_snapshot)
             .addClass('snapshot');
         }
+        if (menu_item_spec.hasOwnProperty('clear_snapshot')) {
+            a.attr({
+                'title' : "",
+            })
+            .on('click', callback_clear_snapshots)
+            .addClass('snapshot');
+        }
+        if (menu_item_spec.hasOwnProperty('refresh_snapshot')) {
+            a.attr({
+                'title' : "",
+            })
+            .on('click', callback_load_snapshots)
+            .addClass('snapshot');
+        }
         if (menu_item_spec.hasOwnProperty('load_snapshot')) {
             var snapshot = menu_item_spec.load_snapshot;
             if (typeof snapshot == 'string' || snapshot instanceof String) {
@@ -214,7 +299,7 @@ define([
                 'title' : "",
                 'data-snapshot-id' : snapshot,
             })
-            .on('click', callback_load_snapshot)
+            .on('click', callback_restore_snapshot)
             .addClass('snapshot');
         }
         

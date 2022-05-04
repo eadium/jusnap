@@ -14,6 +14,7 @@ type Handler interface {
 	GetSnapshots(handlers.Context) (interface{}, error)
 	RestoreSnapshot(handlers.Context) (interface{}, error)
 	CreateSnapshot(ctx handlers.Context) (interface{}, error)
+	ClearSnapshots(ctx handlers.Context) (interface{}, error)
 }
 
 type snapHandler struct {
@@ -64,6 +65,18 @@ func (s *snapHandler) CreateSnapshot(ctx handlers.Context) (interface{}, error) 
 func (s *snapHandler) GetSnapshots(ctx handlers.Context) (interface{}, error) {
 
 	res, err := s.Service.GetSnapshots(ctx)
+	if err != nil {
+		return nil, &handlers.RequestError{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+	return res, nil
+}
+
+func (s *snapHandler) ClearSnapshots(ctx handlers.Context) (interface{}, error) {
+
+	res, err := s.Service.ClearSnapshots()
 	if err != nil {
 		return nil, &handlers.RequestError{
 			Status:  http.StatusInternalServerError,

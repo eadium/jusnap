@@ -180,6 +180,11 @@ func (k *Kernel) GetSnapshots() []*Snapshot {
 	return k.snapshots
 }
 
+func (k *Kernel) ClearSnapshots() error {
+	k.snapshots = nil
+	return nil
+}
+
 func (k *Kernel) GetSnapshotsIDs() []string {
 	var ids []string
 	for _, v := range k.snapshots {
@@ -191,6 +196,15 @@ func (k *Kernel) GetSnapshotsIDs() []string {
 func (k *Kernel) FindSnapshot(id string) *Snapshot {
 	for _, s := range k.snapshots {
 		if s.ID == id {
+			path := filepath.Join(".", "dumps", id)
+			pathExists, dirErr := utils.PathExists(path)
+			if dirErr != nil {
+				k.Logger.Errorf("Error while checking %s: %s", path, dirErr.Error())
+				return nil
+			}
+			if !pathExists {
+				return nil
+			}
 			return s
 		}
 	}

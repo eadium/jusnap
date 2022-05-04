@@ -7,7 +7,7 @@ launch: jusnap
 
 clean:
 	sudo rm -r dumps bin \
-		~/.ipython/extensions\snaphook.py \
+		~/.ipython/extensions/snaphook.py \
 		python_modules/ipykernel/profile_default/db \
 		python_modules/ipykernel/profile_default/log  \
 		python_modules/ipykernel/profile_default/security \
@@ -25,7 +25,7 @@ jusnap:
 
 remote: jusnap sync
 
-install: prep_ubuntu go criu jupyter ipykernel
+install: prep_ubuntu go criu jupyter
 
 prep_ubuntu:
 	sudo cp /etc/apt/sources.list /etc/apt/sources.list~
@@ -44,12 +44,12 @@ criu:
 	cd criu && make && sudo make install
 
 jupyter:
-	$(python) -m pip install --upgrade setuptools notebook
-	$(python) -m pip install -e ./python_modules/jupyter/extkern
-	$(python) -m jupyter nbextension install python_modules/jupyter/extensions/jusnap --user
-	$(python) -m jupyter nbextension enable jusnap/jusnap
+	$(PYTHON) -m pip install --upgrade setuptools notebook
+	$(PYTHON) -m pip install -e ./python_modules/jupyter/extkern
+	$(PYTHON) -m jupyter nbextension install python_modules/jupyter/extensions/jusnap --user
+	$(PYTHON) -m jupyter nbextension enable jusnap/jusnap
 
-ipykernel:
+ipykernel_extension:
 	mkdir -p ~/.ipython/extensions || true
 	cp python_modules/ipykernel/extensions/snaphook.py ~/.ipython/extensions
 

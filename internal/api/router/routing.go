@@ -82,4 +82,12 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		), time.Second,
 		messageTimeout,
 	)).Methods(http.MethodPost)
+
+	router.Handle("/snap/clear", http.TimeoutHandler(
+		handlers.AccessLogHandler(
+			accessLogger,
+			snapHandler.ClearSnapshots,
+		), time.Second,
+		messageTimeout,
+	)).Methods(http.MethodDelete, http.MethodOptions)
 }

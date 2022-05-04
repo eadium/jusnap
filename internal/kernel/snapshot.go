@@ -2,6 +2,7 @@ package kernel
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"jusnap/internal/utils"
 	"os"
@@ -27,6 +28,15 @@ func (s *Snapshot) Restore() error {
 
 	snapshotPath := filepath.Join(".", "dumps", s.ID)
 	pidPath := filepath.Join(".", "dumps", s.ID, "kernel.pid")
+
+	dirExists, dirErr := utils.PathExists(snapshotPath)
+	if dirErr != nil {
+		s.kernel.Logger.Errorf("Error while checking %s: %s", snapshotPath, dirErr.Error())
+		return dirErr
+	}
+	if !dirExists {
+		return errors.New("snapshot directory not found")
+	}
 
 	if s.kernel.config.Jusnap.KernelConfig.HistoryEnabled {
 		historyBakPath := s.kernel.config.Jusnap.KernelConfig.HistoryFile + ".bak"

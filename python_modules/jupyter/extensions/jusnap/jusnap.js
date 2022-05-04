@@ -43,11 +43,11 @@ define([
           });
         }
       }
-      
+
 
     async function http_get_async(theUrl, callback) {
         var xmlHttp = new XMLHttpRequest();
-        xmlHttp.onreadystatechange = () => { 
+        xmlHttp.onreadystatechange = () => {
             if (xmlHttp.readyState == 4) {
                 if ([200, 404, 400, 500].includes(xmlHttp.status)) {
                     callback(xmlHttp.responseText);
@@ -62,7 +62,7 @@ define([
 
     async function http_post_async(theUrl, body, callback) {
         var xmlHttp = new XMLHttpRequest();
-        xmlHttp.onreadystatechange = () => { 
+        xmlHttp.onreadystatechange = () => {
             if (xmlHttp.readyState == 4) {
                 if ([200, 404, 400, 500].includes(xmlHttp.status)) {
                     callback(xmlHttp.responseText);
@@ -77,7 +77,7 @@ define([
 
     async function http_del_async(theUrl, body, callback) {
         var xmlHttp = new XMLHttpRequest();
-        xmlHttp.onreadystatechange = () => { 
+        xmlHttp.onreadystatechange = () => {
             if (xmlHttp.readyState == 4) {
                 if ([200, 404, 400, 500].includes(xmlHttp.status)) {
                     callback(xmlHttp.responseText);
@@ -268,7 +268,7 @@ define([
             .attr('href', '#')
             .html(menu_item_spec.name)
             .appendTo(element);
-        
+
         if (menu_item_spec.hasOwnProperty('create_snapshot')) {
             a.attr({
                 'title' : "",
@@ -302,7 +302,7 @@ define([
             .on('click', callback_restore_snapshot)
             .addClass('snapshot');
         }
-        
+
 
         if (menu_item_spec.hasOwnProperty('sub-menu')) {
             element
@@ -311,7 +311,7 @@ define([
             var sub_element = $('<ul class="dropdown-menu"/>')
                 .toggleClass('dropdown-menu-compact', menu_item_spec.overlay === true) // For space-saving menus
                 .appendTo(element);
-            
+
             if (menu_item_spec.hasOwnProperty('id') && menu_item_spec.id === 'snapshots-menu-load') {
                 sub_element.attr({
                     'id': menu_item_spec.id
@@ -363,9 +363,9 @@ define([
     }
 
     function format_time(ts) {
-        const milliseconds = ts * 1000 
+        const milliseconds = ts * 1000
         const dateObject = new Date(milliseconds)
-        const humanDateFormat = dateObject.toLocaleString() 
+        const humanDateFormat = dateObject.toLocaleString()
         return humanDateFormat
     }
 

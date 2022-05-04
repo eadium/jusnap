@@ -6,8 +6,7 @@ class CellWatcher(object):
         self.url = 'http://localhost:8000/api/snap/new'
 
     def post_run_cell(self, result):
-        x = requests.post(self.url, data = {}, timeout=1)
-
+        x = requests.post(self.url, data = {}, timeout=5)
         print(x.text)
 
 

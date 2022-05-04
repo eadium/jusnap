@@ -133,7 +133,8 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command("criu", "dump",
+	cmd := exec.Command(k.config.Jusnap.PythonInterpreter,
+		"/usr/local/sbin/criu-ns", "dump",
 		"-t", strconv.Itoa(k.proc.Pid),
 		// "-o", filepath.Join(snapshotPath, "dump.log"),
 		"--images-dir", snapshotPath,

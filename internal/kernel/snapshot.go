@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -71,7 +69,8 @@ func (s *Snapshot) Restore() error {
 		}
 	}
 
-	cmd := exec.Command("criu", "restore",
+	cmd := exec.Command(s.kernel.config.Jusnap.PythonInterpreter,
+		"/usr/local/sbin/criu-ns", "restore",
 		"--images-dir", snapshotPath,
 		"--pidfile", "kernel.pid",
 		"-v", "-o", "restore.log",
@@ -112,21 +111,17 @@ func (s *Snapshot) Restore() error {
 }
 
 func (s *Snapshot) updatePID(fname string) error {
-	dat, err := os.ReadFile(fname)
+	pid, err := utils.FindChildProcessByExecName("criu")
 	if err != nil {
-		s.kernel.Logger.Errorf("Error while reading PID: %s", err)
+		s.kernel.Logger.Errorf("Error while looking for procces: %s", err.Error())
 		return err
 	}
-	pid, err := strconv.Atoi(strings.Trim(string(dat), "\n"))
-	if err != nil {
-		s.kernel.Logger.Errorf("Error while convering PID: %s", err)
-		return err
+	if pid == 0 {
+		str := "CRIU process was not found"
+		s.kernel.Logger.Errorf(str)
+		return errors.New(str)
 	}
 	s.kernel.proc.Pid = pid
-	err1 := os.Remove(fname)
-	if err1 != nil {
-		s.kernel.Logger.Errorf("Error while removing %s: %s", fname, err1)
-		return err1
-	}
+
 	return nil
 }

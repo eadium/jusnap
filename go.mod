@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/city-mobil/gobuns v0.0.0-20220425154305-0b21f61d6d05
 	github.com/gorilla/mux v1.8.0
+	github.com/mitchellh/go-ps v1.0.0
 	go.uber.org/zap v1.21.0
 )
 

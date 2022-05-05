@@ -15,8 +15,6 @@ import (
 	"github.com/city-mobil/gobuns/graceful"
 	"github.com/city-mobil/gobuns/zlog"
 	"github.com/gorilla/mux"
-
-	"go.uber.org/zap"
 )
 
 var (
@@ -34,12 +32,8 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	l, _ := zap.NewProduction()
-	defer l.Sync()
-	logger := l.Sugar()
-
-	zlogger, accessLogger := initLogger(cfg)
-	zlogger.Info().
+	logger, accessLogger := initLogger(cfg)
+	logger.Info().
 		Str("version", version).
 		Str("commit", commit).
 		Msgf("Starting %s", serviceName)
@@ -52,7 +46,7 @@ func main() {
 	defer n.Stop()
 
 	snapService := snap.NewService(logger, k)
-	dispatcher := router.NewDispatcher(zlogger, accessLogger, cfg, snapService)
+	dispatcher := router.NewDispatcher(logger, accessLogger, cfg, snapService)
 	router := dispatcher.Init()
 
 	httpServer := initHTTPServer(router, cfg)
@@ -62,22 +56,22 @@ func main() {
 	})
 
 	graceful.ExecOnError(func(err error) {
-		zlogger.Err(err).Msg("graceful got an error")
+		logger.Err(err).Msg("graceful got an error")
 	})
 
 	go func() {
-		zlogger.Info().Msgf("starting HTTP server: listening on %s", cfg.Jusnap.HTTP.Port)
+		logger.Info().Msgf("starting HTTP server: listening on %s", cfg.Jusnap.HTTP.Port)
 
 		err = httpServer.ListenAndServe()
 		if err != http.ErrServerClosed {
-			zlogger.Fatal().Err(err).Msg("failed to start the server")
+			logger.Fatal().Err(err).Msg("failed to start the server")
 		}
 	}()
 
 	err = graceful.WaitShutdown()
-	zlogger.Info().Msgf("Stopping application")
+	logger.Info().Msgf("Stopping application")
 	if err != nil {
-		zlogger.Fatal().Err(err).Msg("failed to gracefully shutdown server")
+		logger.Fatal().Err(err).Msg("failed to gracefully shutdown server")
 	}
 }
 

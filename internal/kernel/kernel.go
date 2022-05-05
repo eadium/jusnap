@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/city-mobil/gobuns/zlog"
 )
 
 type Kernel struct {
 	Locker    *utils.Locker
-	Logger    *zap.SugaredLogger
+	Logger    zlog.Logger
 	proc      *os.Process
 	criu      *os.Process
 	criuNs    *os.Process
@@ -31,7 +31,7 @@ type Kernel struct {
 	version   string
 }
 
-func Create(name string, l *zap.SugaredLogger, cfg *config.Config, ctx context.Context) *Kernel {
+func Create(name string, l zlog.Logger, cfg *config.Config, ctx context.Context) *Kernel {
 	k := &Kernel{
 		Logger:   l,
 		Name:     name,
@@ -54,19 +54,19 @@ func Create(name string, l *zap.SugaredLogger, cfg *config.Config, ctx context.C
 
 	err := cmd.Start()
 	if err != nil {
-		k.Logger.Fatalf("Error while creating kernel: %s", err)
+		k.Logger.Fatal().Msgf("Error while creating kernel: %s", err)
 		return nil
 	}
 
 	k.proc = cmd.Process
 	k.proc.Pid = cmd.Process.Pid
 	k.version = "vanilla"
-	k.Logger.Infof("Kernel %d (%s): started", k.proc.Pid, name)
+	k.Logger.Info().Msgf("Kernel %d (%s): started", k.proc.Pid, name)
 
 	if e := k.LoadSnapshots(); e != nil {
-		k.Logger.Warnf("Error while loading existing snapshots: %s", e.Error())
+		k.Logger.Warn().Msgf("Error while loading existing snapshots: %s", e.Error())
 	} else {
-		k.Logger.Infof("Loaded %d existing snapshots from disk", len(k.snapshots))
+		k.Logger.Info().Msgf("Loaded %d existing snapshots from disk", len(k.snapshots))
 	}
 
 	go k.CooldownLoop()
@@ -79,46 +79,46 @@ func (k *Kernel) Stop() {
 	if k.version == "vanilla" {
 		err = k.proc.Signal(syscall.SIGTERM)
 		if err != nil {
-			k.Logger.Errorf("Error while sending signal to kernel %d: %s", k.proc.Pid, err)
+			k.Logger.Err(err).Msgf("Error while sending signal to kernel %d: %s", k.proc.Pid, err)
 			return
 		}
 
 		status, err1 := k.proc.Wait()
-		k.Logger.Infof("Kernel exited with status: %s", status.String())
+		k.Logger.Info().Msgf("Kernel exited with status: %s", status.String())
 
 		if err1 != nil {
-			k.Logger.Errorf("Error while waiting for kernel PID %d: %s", k.proc.Pid, err1)
+			k.Logger.Err(err).Msgf("Error while waiting for kernel PID %d: %s", k.proc.Pid, err1)
 		}
 
 	} else {
 		err = syscall.Kill(-k.proc.Pid, syscall.SIGTERM)
 		if err != nil {
-			k.Logger.Errorf("Error while killing kernel PID %d: %s", k.proc.Pid, err)
+			k.Logger.Err(err).Msgf("Error while killing kernel PID %d: %s", k.proc.Pid, err)
 			return
 		}
 
 		// err = syscall.Kill(k.criu.Pid, syscall.SIGKILL)
 		err = k.criu.Kill()
 		if err != nil {
-			k.Logger.Errorf("Error while killing CRIU PID %d: %s", k.criu.Pid, err)
+			k.Logger.Err(err).Msgf("Error while killing CRIU PID %d: %s", k.criu.Pid, err)
 			return
 		}
 
 		status, err1 := k.criu.Wait()
 		if err1 != nil {
-			k.Logger.Errorf("Error while waiting CRIU PID %d: %s", k.criu.Pid, err1)
+			k.Logger.Err(err).Msgf("Error while waiting CRIU PID %d: %s", k.criu.Pid, err1)
 		}
-		k.Logger.Infof("CRIU exited with status: %s", status.String())
+		k.Logger.Info().Msgf("CRIU exited with status: %s", status.String())
 	}
 
-	k.Logger.Infof("Kernel %d: stopped", k.proc.Pid)
+	k.Logger.Info().Msgf("Kernel %d: stopped", k.proc.Pid)
 }
 
 func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 	// cooldown for snapshotting
 	select {
 	case <-k.control:
-		k.Logger.Infow("Creating snapshot...")
+		k.Logger.Info().Msg("Creating snapshot...")
 	default:
 		return nil, nil
 	}
@@ -130,7 +130,7 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 
 	err := os.MkdirAll(snapshotPath, os.ModePerm)
 	if err != nil {
-		k.Logger.Errorf("Error while creating snapshot directory: %s", err)
+		k.Logger.Err(err).Msgf("Error while creating snapshot directory: %s", err)
 		return nil, err
 	}
 
@@ -150,21 +150,21 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 	cmd.Stderr = &stderr
 	err1 := cmd.Run()
 	if err1 != nil {
-		k.Logger.Errorf("%s: %s", fmt.Sprint(err1.Error()), stderr.String())
+		k.Logger.Err(err).Msgf("%s: %s", fmt.Sprint(err1.Error()), stderr.String())
 		oserr := os.RemoveAll(snapshotPath)
 		if oserr != nil {
-			k.Logger.Errorf("Error while removing directory %s", snapshotPath)
+			k.Logger.Err(err).Msgf("Error while removing directory %s", snapshotPath)
 		}
 		return nil, err1
 	}
 	if out.Len() != 0 {
-		k.Logger.Infof("CRIU: %s", out.String())
+		k.Logger.Info().Msgf("CRIU: %s", out.String())
 	}
 
 	if k.config.Jusnap.KernelConfig.HistoryEnabled {
 		_, errCopy := utils.Copy(k.config.Jusnap.KernelConfig.HistoryFile, historyPath)
 		if errCopy != nil {
-			k.Logger.Errorf("Error while copying ipython history: %s", errCopy.Error())
+			k.Logger.Err(err).Msgf("Error while copying ipython history: %s", errCopy.Error())
 		}
 	}
 
@@ -174,7 +174,7 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		ID:     nowStr,
 	}
 	k.snapshots = append(k.snapshots, snap)
-	k.Logger.Infof("Kernel %d: created snapshot %s", k.proc.Pid, nowStr)
+	k.Logger.Info().Msgf("Kernel %d: created snapshot %s", k.proc.Pid, nowStr)
 	return snap, nil
 }
 
@@ -201,7 +201,7 @@ func (k *Kernel) FindSnapshot(id string) *Snapshot {
 			path := filepath.Join(".", "dumps", id)
 			pathExists, dirErr := utils.PathExists(path)
 			if dirErr != nil {
-				k.Logger.Errorf("Error while checking %s: %s", path, dirErr.Error())
+				k.Logger.Err(dirErr).Msgf("Error while checking %s: %s", path, dirErr.Error())
 				return nil
 			}
 			if !pathExists {
@@ -229,7 +229,7 @@ func (k *Kernel) LoadSnapshots() error {
 	for _, v := range snapNames {
 		t, err1 := strconv.ParseInt(v, 10, 64)
 		if err1 != nil {
-			k.Logger.Warnf("Error while loading snapshot %s: bad name", v)
+			k.Logger.Warn().Msgf("Error while loading snapshot %s: bad name", v)
 		}
 		s := Snapshot{
 			kernel: k,

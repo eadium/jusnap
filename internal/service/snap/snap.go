@@ -5,7 +5,7 @@ import (
 	"jusnap/internal/kernel"
 	"os"
 
-	"go.uber.org/zap"
+	"github.com/city-mobil/gobuns/zlog"
 )
 
 type Service interface {
@@ -16,11 +16,11 @@ type Service interface {
 }
 
 type service struct {
-	logger *zap.SugaredLogger
+	logger zlog.Logger
 	kernel *kernel.Kernel
 }
 
-func NewService(logger *zap.SugaredLogger, k *kernel.Kernel) Service {
+func NewService(logger zlog.Logger, k *kernel.Kernel) Service {
 	return &service{
 		logger: logger,
 		kernel: k,
@@ -89,16 +89,16 @@ func (s *service) CreateSnapshot(ctx context.Context) (*RestoreSnapResponse, err
 func (s *service) ClearSnapshots() (*ClearSnapResponse, error) {
 	errClear := s.kernel.ClearSnapshots()
 	if errClear != nil {
-		s.logger.Errorf("Error while cleaning snapshots in memory: %s", errClear.Error())
+		s.logger.Err(errClear).Msgf("Error while cleaning snapshots in memory: %s", errClear.Error())
 	}
 	err := os.RemoveAll("./dumps/")
 	if err != nil {
-		s.logger.Errorf("Error while removing snapshots directory: %s", err.Error())
+		s.logger.Err(err).Msgf("Error while removing snapshots directory: %s", err.Error())
 		return nil, err
 	}
 	err = os.MkdirAll("./dumps/", 0755)
 	if err != nil {
-		s.logger.Errorf("Error while creating snapshots directory: %s", err.Error())
+		s.logger.Err(err).Msgf("Error while creating snapshots directory: %s", err.Error())
 		return nil, err
 	}
 	return &ClearSnapResponse{

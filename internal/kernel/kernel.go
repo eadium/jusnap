@@ -21,6 +21,7 @@ type Kernel struct {
 	Logger    *zap.SugaredLogger
 	proc      *os.Process
 	criu      *os.Process
+	criuNs    *os.Process
 	snapshots []*Snapshot
 	config    *config.Config
 	control   chan struct{}
@@ -90,24 +91,24 @@ func (k *Kernel) Stop() {
 		}
 
 	} else {
-		err = syscall.Kill(-k.proc.Pid, syscall.SIGKILL)
+		err = syscall.Kill(-k.proc.Pid, syscall.SIGTERM)
 		if err != nil {
 			k.Logger.Errorf("Error while killing kernel PID %d: %s", k.proc.Pid, err)
 			return
 		}
 
-		err = syscall.Kill(k.criu.Pid, syscall.SIGKILL)
+		// err = syscall.Kill(k.criu.Pid, syscall.SIGKILL)
+		err = k.criu.Kill()
 		if err != nil {
-			k.Logger.Errorf("Error while killing CRIU PID %d: %s", k.proc.Pid, err)
+			k.Logger.Errorf("Error while killing CRIU PID %d: %s", k.criu.Pid, err)
 			return
 		}
 
 		status, err1 := k.criu.Wait()
-		k.Logger.Infof("CRIU exited with status: %s", status.String())
-
 		if err1 != nil {
-			k.Logger.Errorf("Error while waiting CRIU PID %d: %s", k.proc.Pid, err1)
+			k.Logger.Errorf("Error while waiting CRIU PID %d: %s", k.criu.Pid, err1)
 		}
+		k.Logger.Infof("CRIU exited with status: %s", status.String())
 	}
 
 	k.Logger.Infof("Kernel %d: stopped", k.proc.Pid)

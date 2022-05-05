@@ -6,10 +6,10 @@ import (
 	ps "github.com/mitchellh/go-ps"
 )
 
-func FindChildProcessByExecName(name string) (int, error) {
+func FindChildProcessByExecName(name string) (ppid, pid int, err error) {
 	processList, err := ps.Processes()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	// O(n^2) - subject to refactor
@@ -18,11 +18,11 @@ func FindChildProcessByExecName(name string) (int, error) {
 			ppid := p.Pid()
 			for _, c := range processList {
 				if c.PPid() == ppid {
-					return c.Pid(), nil
+					return ppid, c.Pid(), nil
 				}
 			}
 		}
 	}
 
-	return 0, nil
+	return 0, 0, nil
 }

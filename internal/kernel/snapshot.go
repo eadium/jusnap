@@ -25,7 +25,6 @@ func (s *Snapshot) Restore() error {
 	s.kernel.Stop()
 
 	snapshotPath := filepath.Join(".", "dumps", s.ID)
-	pidPath := filepath.Join(".", "dumps", s.ID, "kernel.pid")
 
 	dirExists, dirErr := utils.PathExists(snapshotPath)
 	if dirErr != nil {
@@ -72,9 +71,10 @@ func (s *Snapshot) Restore() error {
 	cmd := exec.Command(s.kernel.config.Jusnap.PythonInterpreter,
 		"/usr/local/sbin/criu-ns", "restore",
 		"--images-dir", snapshotPath,
-		"--pidfile", "kernel.pid",
-		"-v", "-o", "restore.log",
+		// "--pidfile", "kernel.pid",
+		"-v4", "-o", "restore.log",
 		"--tcp-established",
+		"--tcp-close",
 		// "--file-locks",
 		"--shell-job")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -95,12 +95,13 @@ func (s *Snapshot) Restore() error {
 		s.kernel.Logger.Infof("CRIU: %s", out.String())
 	}
 
-	<-time.After(200 * time.Millisecond)
-	s.kernel.criu = cmd.Process
-	errPID := s.updatePID(pidPath)
-
+	<-time.After(100 * time.Millisecond)
+	s.kernel.criuNs = cmd.Process
 	s.kernel.version = "criu"
+	errPID := s.updatePID()
+
 	go s.kernel.criu.Wait()
+	go s.kernel.criuNs.Wait()
 
 	if errPID != nil {
 		return errPID
@@ -110,8 +111,8 @@ func (s *Snapshot) Restore() error {
 	return nil
 }
 
-func (s *Snapshot) updatePID(fname string) error {
-	pid, err := utils.FindChildProcessByExecName("criu")
+func (s *Snapshot) updatePID() error {
+	criupid, pid, err := utils.FindChildProcessByExecName("criu")
 	if err != nil {
 		s.kernel.Logger.Errorf("Error while looking for procces: %s", err.Error())
 		return err
@@ -123,5 +124,13 @@ func (s *Snapshot) updatePID(fname string) error {
 	}
 	s.kernel.proc.Pid = pid
 
+	var errFindCriu error
+	s.kernel.criu, errFindCriu = os.FindProcess(criupid)
+	if errFindCriu != nil {
+		s.kernel.Logger.Errorf("Error while attaching criu process: %s", errFindCriu.Error())
+		return errFindCriu
+	}
+
+	fmt.Printf("proc pid: %d, criu pid: %d\n", pid, criupid)
 	return nil
 }

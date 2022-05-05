@@ -40,13 +40,16 @@ var (
 )
 
 func init() { //nolint
+	// http
 	httpPort = config.String("jusnap.http.port", defaultHTTPPort, "HTTP port")
 	httpReadTimeout = config.Duration("jusnap.http.read_timeout", defaultReadTimeout, "HTTP read timeout")
 	httpWriteTimeout = config.Duration("jusnap.http.write_timeout", defaultWriteTimeout, "HTTP write timeout")
 
+	// os
 	uid = config.Int("jusnap.os.uid", os.Getuid(), "UID for created files")
 	gid = config.Int("jusnap.os.gid", os.Getgid(), "GID for created files")
 
+	// ipython
 	pythonInterpreter = config.String("jusnap.ipython.python_interpreter", defaultPythonInterpreter, "Python interpreter to use")
 	runtimePath = config.String("jusnap.ipython.runtime_path", defaultRuntimePath, "Path to Jupyter runtime dir")
 	ipythonHistoryFile = config.String("jusnap.ipython.history_file", defaultipythonHistoryFile, "Path to history.sqlite")
@@ -54,8 +57,10 @@ func init() { //nolint
 	cooldownInterval = config.Duration("jusnap.ipython.cooldown", defaultCooldownInterval, "Snapshotting cooldown interval")
 	ipythonArgs = config.StringSlice("jusnap.ipython.args", []string{}, "Launch arguments fot ipykernel")
 
+	// jupyter notebook
 	jupyterArgs = config.StringSlice("jusnap.jupyter.args", []string{}, "Launch arguments fot Jupyter Notebook")
 
+	// app
 	logLevel = config.String("jusnap.log_level", defaultLogLevel, "Logging level")
 }
 

@@ -3,13 +3,13 @@ jusnap:
   ipython:
     python_interpreter: python3.9
     args: [
-        "--ipython-dir=python_modules/ipykernel",
-        "--ip", "0.0.0.0"
+        "--ipython-dir=python_modules/ipykernel"
       ]
   os:
     uid: 1000 
     gid: 1000
   jupyter:
     args: [
-      "--config=python_modules/jupyter/jupyter_notebook_config.py"
+      "--config=python_modules/jupyter/jupyter_notebook_config.py",
+      "--ip", "0.0.0.0"
     ]

@@ -99,13 +99,12 @@ func (s *Snapshot) Restore() error {
 	s.kernel.criuNs = cmd.Process
 	s.kernel.version = "criu"
 	errPID := s.updatePID()
-
-	go s.kernel.criu.Wait()
-	go s.kernel.criuNs.Wait()
-
 	if errPID != nil {
 		return errPID
 	}
+
+	go s.kernel.criu.Wait()
+	go s.kernel.criuNs.Wait()
 
 	s.kernel.Logger.Info().Msgf("Restored checkpoint %s with PID %d successfully", s.ID, s.kernel.proc.Pid)
 	return nil

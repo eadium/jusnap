@@ -139,10 +139,10 @@ func (k *Kernel) CreateSnapshot() (*Snapshot, error) {
 		"-t", strconv.Itoa(k.proc.Pid),
 		// "-o", filepath.Join(snapshotPath, "dump.log"),
 		"--images-dir", snapshotPath,
-		"--tcp-established",
-		"--shell-job",
-		// "--file-locks",
-		"--leave-running")
+		"--tcp-established",                                                         // https://criu.org/Advanced_usage#TCP_connections
+		"--shell-job",                                                               // https://criu.org/Advanced_usage#Shell_jobs_C.2FR
+		"--ghost-limit", strconv.Itoa(k.config.Jusnap.CriuConfig.GhostLimit*1024^2), // https://criu.org/Invisible_files
+		"--leave-running") // https://criu.org/Advanced_usage#Leave_task_running_after_checkpoint
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer

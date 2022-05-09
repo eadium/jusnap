@@ -15,6 +15,7 @@ const (
 	defaultRuntimePath        = "~/.local/share/jupyter/runtime/"
 	defaultCooldownInterval   = 5 * time.Second
 	defaultPythonInterpreter  = "python3"
+	defaultCriuGhostLimit     = 2 // MB
 )
 
 const (
@@ -37,6 +38,8 @@ var (
 	uid         *int
 	gid         *int
 	jupyterArgs *[]string
+
+	criuGhostLimit *int
 )
 
 func init() { //nolint
@@ -62,6 +65,9 @@ func init() { //nolint
 
 	// app
 	logLevel = config.String("jusnap.log_level", defaultLogLevel, "Logging level")
+
+	// criu
+	criuGhostLimit = config.Int("jusnap.criu.ghost_limit", defaultCriuGhostLimit, "Ghost file limit (MB)")
 }
 
 type AppConfig struct {
@@ -69,6 +75,7 @@ type AppConfig struct {
 	KernelConfig      *KernelConfig
 	OsConfig          *OsConfig
 	JupyterConfig     *JupyterConfig
+	CriuConfig        *CriuConfig
 	PythonInterpreter string
 	LogLevel          string
 	Version           string
@@ -85,6 +92,10 @@ type KernelConfig struct {
 type OsConfig struct {
 	Uid int
 	Gid int
+}
+
+type CriuConfig struct {
+	GhostLimit int
 }
 
 type JupyterConfig struct {
@@ -113,6 +124,7 @@ func newDefaultConfig(version string) *Config {
 			HTTP:              newDefaultHTTPServerConfig(),
 			KernelConfig:      newKernelConfig(),
 			JupyterConfig:     newJupyterConfig(),
+			CriuConfig:        newCriuConfig(),
 			PythonInterpreter: *pythonInterpreter,
 			LogLevel:          *logLevel,
 			Version:           version,
@@ -137,6 +149,12 @@ func newKernelConfig() *KernelConfig {
 func newJupyterConfig() *JupyterConfig {
 	return &JupyterConfig{
 		JupyterArgs: *jupyterArgs,
+	}
+}
+
+func newCriuConfig() *CriuConfig {
+	return &CriuConfig{
+		GhostLimit: *criuGhostLimit,
 	}
 }
 

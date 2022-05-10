@@ -10,3 +10,4 @@ profile_default/*
 __pycache__/
 *.pyc
 *.ipynb
+main

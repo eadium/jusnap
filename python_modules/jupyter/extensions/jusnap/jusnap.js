@@ -19,7 +19,7 @@ define([
     };
 
     var cfg = {
-        api_host: window.location.host.split(':')[0] + ':8000',
+        api_host: window.location.host,
         snapshots_submenu_id: '#snapshots-menu-load',
         insert_before_sibling: false,
         sibling_selector: '#help_menu',

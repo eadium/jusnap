@@ -1,10 +1,13 @@
 package router
 
 import (
+	"fmt"
 	v1 "jusnap/internal/api/v1"
 	"jusnap/internal/config"
 	"jusnap/internal/service/snap"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
 	"github.com/city-mobil/gobuns/handlers"
@@ -15,6 +18,8 @@ import (
 const (
 	messageTimeout = "HTTP: request timeout"
 )
+
+var proxyUrl *url.URL
 
 type Dispatcher struct {
 	cfg          *config.Config
@@ -43,7 +48,7 @@ func (d *Dispatcher) Init() *mux.Router {
 
 	internal := d.addPrefixRouting(router)
 	d.addRoutesV1(internal)
-
+	d.addProxyRoute(router)
 	return router
 }
 
@@ -90,4 +95,27 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		), time.Second,
 		messageTimeout,
 	)).Methods(http.MethodDelete, http.MethodOptions)
+}
+
+func (d *Dispatcher) addProxyRoute(router *mux.Router) {
+	var err error
+	proxyUrl, err = url.Parse(fmt.Sprintf("http://127.0.0.1:%d", d.cfg.Jusnap.JupyterConfig.Port))
+	if err != nil {
+		return
+	}
+	router.PathPrefix("/").HandlerFunc(proxyPass)
+}
+
+func proxyPass(res http.ResponseWriter, req *http.Request) {
+	proxy := httputil.NewSingleHostReverseProxy(proxyUrl)
+	proxy.Transport = &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 10 * time.Second,
+		ResponseHeaderTimeout: 60 * time.Second,
+	}
+	proxy.ServeHTTP(res, req)
 }

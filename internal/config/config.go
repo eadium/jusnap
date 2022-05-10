@@ -9,14 +9,15 @@ import (
 
 const (
 	defaultHTTPPort              = "8000"
-	defaultReadTimeout           = time.Second
-	defaultWriteTimeout          = time.Second
+	defaultReadTimeout           = 5 * time.Second
+	defaultWriteTimeout          = 5 * time.Second
 	defaultipythonHistoryFile    = "~/.ipython/profile_default/history.sqlite"
 	defaultRuntimePath           = "~/.local/share/jupyter/runtime/"
 	defaultCooldownInterval      = 5 * time.Second
 	defaultPythonInterpreter     = "python3"
 	defaultCriuGhostLimit        = 2 // MB
 	defaultIPythonHistoryEnabled = false
+	defaultJupyterPort           = 8888
 )
 
 const (
@@ -39,6 +40,7 @@ var (
 	uid         *int
 	gid         *int
 	jupyterArgs *[]string
+	jupyterPort *int
 
 	criuGhostLimit *int
 )
@@ -63,6 +65,7 @@ func init() { //nolint
 
 	// jupyter notebook
 	jupyterArgs = config.StringSlice("jusnap.jupyter.args", []string{}, "Launch arguments fot Jupyter Notebook")
+	jupyterPort = config.Int("jusnap.jupyter.port", defaultJupyterPort, "TCP port for Jupyter Notebook")
 
 	// app
 	logLevel = config.String("jusnap.log_level", defaultLogLevel, "Logging level")
@@ -101,6 +104,7 @@ type CriuConfig struct {
 
 type JupyterConfig struct {
 	JupyterArgs []string
+	Port        int
 }
 
 type HTTPServerConfig struct {
@@ -150,6 +154,7 @@ func newKernelConfig() *KernelConfig {
 func newJupyterConfig() *JupyterConfig {
 	return &JupyterConfig{
 		JupyterArgs: *jupyterArgs,
+		Port:        *jupyterPort,
 	}
 }
 

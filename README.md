@@ -8,8 +8,8 @@ Jusnap could be used for creating state-checkpoints (to be not confused with bui
 Works fine for Ubuntu and other linux-based distros. Doesn't fit for Windows, Solaris and probably MacOS.
 
 ## Prerequisites
----
-To use `make` you'll GNU make installed on your system
+
+To use `make` you'll need GNU Make installed on your system
 ```bash
 sudo apt update && sudo apt install make
 ```
@@ -39,12 +39,13 @@ Checkout an example in [conf.yml.dist](conf.yml.dist).
 ```
 ./jusnap -h
 Usage of default:
+Usage of default:
       --config string                              Configuration file path.
       --graceful.shutdown_timeout duration         Graceful shutdown timeout (default 10s)
       --jusnap.criu.ghost_limit int                Ghost file limit (MB) (default 2)
       --jusnap.http.port string                    HTTP port (default "8000")
-      --jusnap.http.read_timeout duration          HTTP read timeout (default 1s)
-      --jusnap.http.write_timeout duration         HTTP write timeout (default 1s)
+      --jusnap.http.read_timeout duration          HTTP read timeout (default 5s)
+      --jusnap.http.write_timeout duration         HTTP write timeout (default 5s)
       --jusnap.ipython.args strings                Launch arguments fot ipykernel
       --jusnap.ipython.cooldown duration           Snapshotting cooldown interval (default 5s)
       --jusnap.ipython.history_enabled             Enables history file management (default false)
@@ -52,9 +53,10 @@ Usage of default:
       --jusnap.ipython.python_interpreter string   Python interpreter to use (default "python3")
       --jusnap.ipython.runtime_path string         Path to Jupyter runtime dir (default "~/.local/share/jupyter/runtime/")
       --jusnap.jupyter.args strings                Launch arguments fot Jupyter Notebook
+      --jusnap.jupyter.port int                    TCP port for Jupyter Notebook (default 8888)
       --jusnap.log_level string                    Logging level (default "info")
-      --jusnap.os.gid int                          GID for created files (default 20)
-      --jusnap.os.uid int                          UID for created files (default 501)
+      --jusnap.os.gid int                          GID for created files (default [running user uid])
+      --jusnap.os.uid int                          UID for created files (default [running user gid])
 ```
 Please pay attention to `--jusnap.ipython.args` and `--jusnap.jupyter.args` as these options allow you to pass extra arguments to ipython kernel and Jupyter server accordingly.
 
@@ -71,7 +73,7 @@ and to disable:
 ```bash
 make ipykernel_extension_off
 ```
----
+
 
 ## Usage
 The simplest way to start Jusnap is:
@@ -79,21 +81,20 @@ The simplest way to start Jusnap is:
 make
 ```
 This command will run Jusnap with `conf.yml` as configuration file.
-Jusnap will start a listening HTTP server using port from `--jusnap.http.port` and Jupyter Notebook server on default port 8888 (or any other user-supplied through `NotebookApp.port` argument to `--jusnap.jupyter.args` Jusnap config option)
+Jusnap will start a listening HTTP server using port from `--jusnap.http.port` and Jupyter Notebook server on default port 8888 (or any other user-supplied through `--jusnap.jupyter.port` config option)
 
----
+
 ## Inside
-Jusnap is powered bu [CRIU](https://criu.org/Main_Page) snapshotting tool and consists of X main parts:
+Jusnap is powered bu [CRIU](https://criu.org/Main_Page) snapshotting tool and consists of 4 main parts:
 - golang server (API + process management)
 - Jupyter kernel [manager](python_modules/jupyter/extkern/extkern/__init__.py)
 - IPython [extension](python_modules/ipykernel/extensions/snaphook.py) for autosnapshotting
 - Jupyter Notebook frontend [extension](python_modules/jupyter/extensions/jusnap/jusnap.js)
 
----
+
 ## TODOs
 - Add network storage for images
 - Fix support of history file (currently unsupported feature)
-- Add NGINX proxy to merge Jusnap and Jupyter APIs
 - Add HTTPS (that will also fix browser notifications)
 - Add CentOS support for Makefile
 - Add Jupyter Lab plugin

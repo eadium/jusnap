@@ -18,14 +18,15 @@ clean:
 	jupyter nbextension disable jusnap/jusnap
 	jupyter nbextension uninstall jusnap
 
-bin/jusnap:
-	CGO=0 GOOS=linux go build -o ./bin/jusnap cmd/main.go
 
 install: build_criu jupyter go bin/jusnap
 
 criu_deb:
 	sudo add-apt-repository -y ppa:criu/ppa
-	sudo apt install -y criu 
+	sudo apt install -y criu
+	curl --silent https://raw.githubusercontent.com/checkpoint-restore/criu/master/scripts/criu-ns > criu-ns
+	chmod +x criu-ns
+	sudo cp criu-ns /usr/local/sbin/
 
 jupyter:
 	sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -47,6 +48,9 @@ go:
 conf.yml:
 	cp conf.yml.dist conf.yml
 
+bin/jusnap:
+	CGO=0 GOOS=linux go build -o ./bin/jusnap cmd/main.go
+
 prep_build_criu:
 	# sudo cp /etc/apt/sources.list /etc/apt/sources.list~
 	# sudo sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
@@ -55,7 +59,7 @@ prep_build_criu:
 	# sudo apt build-dep -y criu
 	sudo apt install -y git curl build-essential libc6-dev-i386 gcc-multilib  pkg-config python-ipaddress \
 		python3-future iproute2 libbsd-dev libcap-dev libnl-3-dev libnet-dev libaio-dev libprotobuf-dev \
-		libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python-protobuf 
+		libprotobuf-c-dev protobuf-c-compiler protobuf-compiler python-protobuf
 
 build_criu: prep_build_criu
 	git clone 'https://github.com/checkpoint-restore/criu.git' || true

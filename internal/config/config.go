@@ -8,14 +8,15 @@ import (
 )
 
 const (
-	defaultHTTPPort           = "8000"
-	defaultReadTimeout        = time.Second
-	defaultWriteTimeout       = time.Second
-	defaultipythonHistoryFile = "~/.ipython/profile_default/history.sqlite"
-	defaultRuntimePath        = "~/.local/share/jupyter/runtime/"
-	defaultCooldownInterval   = 5 * time.Second
-	defaultPythonInterpreter  = "python3"
-	defaultCriuGhostLimit     = 2 // MB
+	defaultHTTPPort              = "8000"
+	defaultReadTimeout           = time.Second
+	defaultWriteTimeout          = time.Second
+	defaultipythonHistoryFile    = "~/.ipython/profile_default/history.sqlite"
+	defaultRuntimePath           = "~/.local/share/jupyter/runtime/"
+	defaultCooldownInterval      = 5 * time.Second
+	defaultPythonInterpreter     = "python3"
+	defaultCriuGhostLimit        = 2 // MB
+	defaultIPythonHistoryEnabled = false
 )
 
 const (
@@ -56,7 +57,7 @@ func init() { //nolint
 	pythonInterpreter = config.String("jusnap.ipython.python_interpreter", defaultPythonInterpreter, "Python interpreter to use")
 	runtimePath = config.String("jusnap.ipython.runtime_path", defaultRuntimePath, "Path to Jupyter runtime dir")
 	ipythonHistoryFile = config.String("jusnap.ipython.history_file", defaultipythonHistoryFile, "Path to history.sqlite")
-	ipythonHistoryEnabled = config.Bool("jusnap.ipython.history_enabled", false, "Path to history.sqlite")
+	ipythonHistoryEnabled = config.Bool("jusnap.ipython.history_enabled", defaultIPythonHistoryEnabled, "Enables history file management (default false)")
 	cooldownInterval = config.Duration("jusnap.ipython.cooldown", defaultCooldownInterval, "Snapshotting cooldown interval")
 	ipythonArgs = config.StringSlice("jusnap.ipython.args", []string{}, "Launch arguments fot ipykernel")
 

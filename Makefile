@@ -1,13 +1,12 @@
 PYTHON_VER = 3.9
 PYTHON = python$(PYTHON_VER)
 
-launch: bin/jusnap conf.yml
+run: bin/jusnap conf.yml
 	sudo --preserve-env ./bin/jusnap \
 	--config conf.yml
 
 clean:
 	sudo rm -r dumps bin \
-		~/.ipython/extensions/snaphook.py \
 		python_modules/ipykernel/profile_default/db \
 		python_modules/ipykernel/profile_default/log  \
 		python_modules/ipykernel/profile_default/security \
@@ -15,10 +14,10 @@ clean:
 		python_modules/ipykernel/profile_default/pid \
 		python_modules/ipykernel/profile_default/history.sqlite || true
 	cd criu && $(MAKE) clean
-	jupyter nbextension disable jusnap/jusnap
-	jupyter nbextension uninstall jusnap
 
 install: build_criu jupyter go bin/jusnap
+
+install_deb: criu_deb jupyter go bin/jusnap
 
 jupyter:
 	sudo add-apt-repository -y ppa:deadsnakes/ppa
@@ -65,3 +64,12 @@ criu_deb:
 	curl --silent https://raw.githubusercontent.com/checkpoint-restore/criu/master/scripts/criu-ns > criu-ns
 	chmod +x criu-ns
 	sudo cp criu-ns /usr/local/sbin/
+
+uninstall:
+	$(MAKE) clean
+	rm ~/.ipython/extensions/snaphook.py 
+	jupyter nbextension disable jusnap/jusnap
+	jupyter nbextension uninstall jusnap
+	cd criu && sudo $(MAKE) uninstall
+	sudo apt remove -y criu || true
+	sudo apt autoremove

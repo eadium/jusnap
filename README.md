@@ -55,8 +55,8 @@ Usage of default:
       --jusnap.jupyter.args strings                Launch arguments fot Jupyter Notebook
       --jusnap.jupyter.port int                    TCP port for Jupyter Notebook (default 8888)
       --jusnap.log_level string                    Logging level (default "info")
-      --jusnap.os.gid int                          GID for created files (default [running user uid])
-      --jusnap.os.uid int                          UID for created files (default [running user gid])
+      --jusnap.os.gid int                          GID for created files (default [running user gid])
+      --jusnap.os.uid int                          UID for created files (default [running user uid])
 ```
 Please pay attention to `--jusnap.ipython.args` and `--jusnap.jupyter.args` as these options allow you to pass extra arguments to ipython kernel and Jupyter server accordingly.
 

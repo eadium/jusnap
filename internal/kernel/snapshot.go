@@ -73,10 +73,9 @@ func (s *Snapshot) Restore() error {
 		"--images-dir", snapshotPath,
 		// "--pidfile", "kernel.pid",
 		"-v4", "-o", "restore.log",
-		"--tcp-established",
-		"--tcp-close",
-		// "--file-locks",
-		"--shell-job")
+		"--tcp-established", // https://criu.org/Advanced_usage#TCP_connections
+		"--tcp-close",       // https://criu.org/CLI/opt/--tcp-close
+		"--shell-job")       // https://criu.org/Advanced_usage#Shell_jobs_C.2FR
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true,
 	}

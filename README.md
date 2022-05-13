@@ -83,6 +83,7 @@ make
 This command will run Jusnap with `conf.yml` as configuration file.
 Jusnap will start a listening HTTP server using port from `--jusnap.http.port` and Jupyter Notebook server on default port 8888 (or any other user-supplied through `--jusnap.jupyter.port` config option)
 
+Jupyter Notebook Output is logged to `jupyter.log` file.
 
 ## Inside
 Jusnap is powered bu [CRIU](https://criu.org/Main_Page) snapshotting tool and consists of 4 main parts:

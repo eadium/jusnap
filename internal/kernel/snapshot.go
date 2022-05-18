@@ -115,8 +115,13 @@ func (s *Snapshot) updatePID() error {
 		s.kernel.Logger.Err(err).Msgf("Error while looking for procces: %s", err.Error())
 		return err
 	}
-	if pid == 0 {
+	if criupid == 0 {
 		str := "CRIU process was not found"
+		s.kernel.Logger.Err(err).Msgf(str)
+		return errors.New(str)
+	}
+	if pid == 0 {
+		str := "kernel process was not found"
 		s.kernel.Logger.Err(err).Msgf(str)
 		return errors.New(str)
 	}

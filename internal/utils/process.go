@@ -21,6 +21,7 @@ func FindChildProcessByExecName(name string) (ppid, pid int, err error) {
 					return ppid, c.Pid(), nil
 				}
 			}
+			return ppid, 0, nil
 		}
 	}
 

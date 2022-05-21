@@ -1,6 +1,5 @@
 PYTHON_VER = 3.9
 PYTHON = python$(PYTHON_VER)
-HOST=jusnap.rasseki.org
 
 run: bin/jusnap conf.yml
 	sudo --preserve-env ./bin/jusnap \
@@ -26,7 +25,7 @@ jupyter:
 	curl -sS https://bootstrap.pypa.io/get-pip.py | $(PYTHON)
 	$(PYTHON) -m pip install --upgrade setuptools notebook pyzmq
 	$(PYTHON) -m pip install -e ./python_modules/jupyter/extkern
-	sed -i "s/example.com/$(HOST)/" ./python_modules/jupyter/jupyter_notebook_config.py
+	# sed -i "s/example.com/$(HOST)/" ./python_modules/jupyter/jupyter_notebook_config.py
 	jupyter nbextension install python_modules/jupyter/extensions/jusnap --user
 	jupyter nbextension enable jusnap/jusnap
 
@@ -74,6 +73,7 @@ nginx:
 	sudo rm /etc/nginx/sites-enabled/default || true
 	sudo certbot --register-unsafely-without-email -n --keep-until-expiring --reuse-key --nginx -d $(HOST)
 	sudo nginx -s reload
+	echo "c.NotebookApp.allow_origin = 'https://$(HOST)'" >> ./python_modules/jupyter/jupyter_notebook_config.py
 
 uninstall:
 	$(MAKE) clean
@@ -83,3 +83,6 @@ uninstall:
 	cd criu && sudo $(MAKE) uninstall
 	sudo apt remove -y criu || true
 	sudo apt autoremove
+
+echo:
+	echo "c.NotebookApp.allow_origin = 'https://$(HOST)'" >> ./python_modules/jupyter/jupyter_notebook_config.py

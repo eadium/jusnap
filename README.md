@@ -32,6 +32,14 @@ However, if you want to install CRIU from deb package, please run:
 make install_deb
 ```
 
+You may also want to use https with nginx. To do so type:
+```bash
+HOST=example.com make nginx
+```
+where `example.com` is your hostname (without scheme).
+This command will install nginx and launch certbot to issue a certificate for your domain.
+
+
 ### Configuration
 Jusnap could be configured either via CLI parameters or using a config file `conf.yml`. The latter is a preferable way.
 Checkout an example in [conf.yml.dist](conf.yml.dist).
@@ -73,8 +81,6 @@ and to disable:
 ```bash
 make ipykernel_extension_off
 ```
-
-
 ## Usage
 The simplest way to start Jusnap is:
 ```bash

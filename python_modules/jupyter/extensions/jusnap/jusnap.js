@@ -110,7 +110,7 @@ define([
     }
 
     function load_snapshots() {
-        http_get_async('http://'+cfg.api_host+'/api/snap', async_load_snapshots)
+        http_get_async('/api/snap', async_load_snapshots)
     }
 
     function callback_load_snapshots(evt) {
@@ -119,7 +119,7 @@ define([
     }
 
     function create_snapshot() {
-        http_post_async('http://'+cfg.api_host+'/api/snap/new', {}, (resp) => {
+        http_post_async('/api/snap/new', {}, (resp) => {
             var data = JSON.parse(resp)
             var opts = {}
             $(cfg.snapshots_submenu_id).empty()
@@ -146,7 +146,7 @@ define([
     }
 
     function clear_snapshots() {
-        http_del_async('http://'+cfg.api_host+'/api/snap/clear', {}, (resp) => {
+        http_del_async('/api/snap/clear', {}, (resp) => {
             var data = JSON.parse(resp)
             var opts = {}
             $(cfg.snapshots_submenu_id).empty()
@@ -176,7 +176,7 @@ define([
         var req = {
             'id': id.toString()
         }
-        http_post_async('http://'+cfg.api_host+'/api/snap/restore', req, (resp) => {
+        http_post_async('/api/snap/restore', req, (resp) => {
             var data = JSON.parse(resp)
             var message = ''
             var opts = {}

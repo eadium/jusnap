@@ -72,7 +72,7 @@ func Create(ctx context.Context, l zlog.Logger, cfg *config.Config) *Notebook {
 			return
 		}
 		if out.Len() != 0 {
-			urlRegex, errRegex := regexp.Compile(`http://((\d+)\.*){4}:(?P<port>\d+)/\?token=\w{48}`)
+			urlRegex, errRegex := regexp.Compile(`http://((((\d+)\.*){4})|((\w+)\.*)+):(?P<port>\d+)/\?token=\w{48}`)
 			if errRegex != nil {
 				n.Logger.Err(err).Msgf("Error while compiling Jupyter URL regexp")
 			}

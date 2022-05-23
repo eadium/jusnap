@@ -1,7 +1,7 @@
 PYTHON_VER = 3.9
 PYTHON = python$(PYTHON_VER)
 
-run: bin/jusnap conf.yml
+run: bin/jusnap conf.yml notebooks
 	sudo --preserve-env ./bin/jusnap \
 	--config conf.yml
 
@@ -26,6 +26,7 @@ jupyter:
 	$(PYTHON) -m pip install --upgrade setuptools notebook pyzmq
 	$(PYTHON) -m pip install -e ./python_modules/jupyter/extkern
 	# sed -i "s/example.com/$(HOST)/" ./python_modules/jupyter/jupyter_notebook_config.py
+	mkdir notebooks || true
 	jupyter nbextension install python_modules/jupyter/extensions/jusnap --user
 	jupyter nbextension enable jusnap/jusnap
 
@@ -46,6 +47,9 @@ conf.yml:
 
 bin/jusnap:
 	CGO=0 GOOS=linux go build -o ./bin/jusnap cmd/main.go
+
+notebooks:
+	mkdir notebooks
 
 prep_build_criu:
 	sudo apt update
@@ -71,7 +75,7 @@ nginx:
 	sed -i "s/example.com/$(HOST)/" ./nginx.conf
 	sudo cp nginx.conf /etc/nginx/conf.d/jusnap.conf
 	sudo rm /etc/nginx/sites-enabled/default || true
-	sudo certbot --register-unsafely-without-email -n --keep-until-expiring --reuse-key --nginx -d $(HOST)
+	sudo certbot --register-unsafely-without-email --agree-tos -n --keep-until-expiring --reuse-key --nginx -d $(HOST)
 	sudo nginx -s reload
 	echo "c.NotebookApp.allow_origin = 'https://$(HOST)'" >> ./python_modules/jupyter/jupyter_notebook_config.py
 

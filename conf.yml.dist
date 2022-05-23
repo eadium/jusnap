@@ -14,7 +14,8 @@ jusnap:
   jupyter:
     args: [
       "--config=python_modules/jupyter/jupyter_notebook_config.py",
-      "--ip=0.0.0.0"
+      "--ip=0.0.0.0",
+      "--notebook-dir=notebooks"
     ]
   criu:
     ghost_limit: 10

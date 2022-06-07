@@ -68,7 +68,7 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		handlers.AccessLogHandler(
 			accessLogger,
 			snapHandler.GetSnapshots,
-		), time.Second,
+		), d.cfg.Jusnap.HTTP.ReadTimeout,
 		messageTimeout,
 	)).Methods(http.MethodGet, http.MethodOptions)
 
@@ -76,7 +76,7 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		handlers.AccessLogHandler(
 			accessLogger,
 			snapHandler.RestoreSnapshot,
-		), time.Second,
+		), d.cfg.Jusnap.HTTP.ReadTimeout,
 		messageTimeout,
 	)).Methods(http.MethodPost)
 
@@ -84,7 +84,7 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		handlers.AccessLogHandler(
 			accessLogger,
 			snapHandler.CreateSnapshot,
-		), time.Second,
+		), d.cfg.Jusnap.HTTP.ReadTimeout,
 		messageTimeout,
 	)).Methods(http.MethodPost)
 
@@ -92,7 +92,7 @@ func (d *Dispatcher) addRoutesV1(router *mux.Router) {
 		handlers.AccessLogHandler(
 			accessLogger,
 			snapHandler.ClearSnapshots,
-		), time.Second,
+		), d.cfg.Jusnap.HTTP.ReadTimeout,
 		messageTimeout,
 	)).Methods(http.MethodDelete, http.MethodOptions)
 }
